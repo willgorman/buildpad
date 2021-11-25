@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 func main() {
-	term, err := term.Open("/dev/cu.usbmodem1412203", term.Speed(115200))
+	term, err := term.Open("/dev/cu.usbmodem1422203", term.Speed(115200))
 	if err != nil {
 		panic(err)
 	}
@@ -17,6 +18,7 @@ func main() {
 	go func() {
 		for {
 			b := make([]byte, 6)
+
 			_, err = term.Read(b)
 			if err != nil {
 				panic(err)
@@ -26,13 +28,26 @@ func main() {
 				fmt.Printf("Func: %s, File: %s, Line: %d\n", runtime.FuncForPC(currfunc).Name(), currfile, currline)
 			}
 
-			fmt.Println(b)
+			fmt.Println(string(b))
 		}
 	}()
 
+	pixel := 0
 	for {
-
-		_, err = term.Write([]byte("a\n"))
+		if pixel > 11 {
+			pixel = 0
+		}
+		data, err := json.Marshal(map[string]interface{}{
+			"cmd":        "setlight",
+			"pixel":      pixel,
+			"brightness": 100,
+			"color":      "green",
+		})
+		if err != nil {
+			panic(err)
+		}
+		pixel++
+		_, err = term.Write(data)
 		if err != nil {
 			panic(err)
 		}
